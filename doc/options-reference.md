@@ -269,7 +269,7 @@ a `matchesFocus` attribute, which is either `true` for modules in focus or
     "focus": "^src/main/",
     "reporterOptions": {
       "dot": {
-        "collapsePattern": "^node_modules/[^/]+/",
+        "collapsePattern": "^node_modules/(@[^/]+/[^/]+|[^/]+)/",
         "theme": {
           "graph": {
             "splines": "ortho"
@@ -708,20 +708,15 @@ babelConfig - dependency-cruiser will sort it out for you.
   but [raise an issue](https://github.com/sverweij/dependency-cruiser/issues/new?template=feature-request.md&title=Feature+request%3A+use+babel+only+for+specific+extensions?)
   if you need this to be configurable.
 - :bulb: Dependency-cruiser can process json (/ json5) configurations, either in a
-  separate file or as a key in your package.json. It can also process .js and
-  .cjs configurations, as long as they're commonjs modules and export a simple
-  javascript object. JavaScript configurations that export a function, and/ or
-  that are es modules might be supported in a later stage.
+  separate file or as a key in your package.json. It can also process .js , .cjs
+  and .mjs configurations, as long as they export a simple javascript object.
+  JavaScript configurations that export a function, might get supported in a
+  later stage (upon request).
 - :bulb: Auto detection in [--init](cli.md#--init) looks at some of the likely suspects
   for babel configs - _package.json_ (only if it contains a _babel_ key),
   _.babelrc_, _.babelrc.json_, _babel.config.json_ and any other file with _babel_
   in the name that ends on _json_ or _json5_. - The feature currently works with
   babel versions >=7.0.0
-- :warning: Babel support is currently an experimental feature. This means it
-  is thoroughly tested, works well as far as we could determine. It also means
-  dependency-cruiser won't get a major version bump for little changes that
-  for regular features might be considered breaking (think of more precise
-  module system determination).
 - :construction: The current implementation of babel support is robust, but can be more
   efficient. It's on the [road map](https://github.com/sverweij/dependency-cruiser/projects/1#card-39192574),
   but as it's not entirely trivial it may take some time. The implementation
@@ -773,9 +768,9 @@ you can provide the parameters like so:
 - :bulb: If your webpack config exports an array of configurations,
   dependency-cruiser will only use the resolve options of the first
   configuration in that array.
-- :warning: at this time webpack configurations in ES module format (.mjs) are
-  _not_ supported.
-- :bulb: other formats of webpack configurations (TypeScript, yaml, livescript(!),
+- :bulb: Configuration files in the node 'native' formats (.json, .js (both commonjs
+  and ESM), .cjs, .mjs, .node) will load without configuration.
+- :bulb: formats of webpack configurations (TypeScript, yaml, livescript(!),
   json5 etc.) only work when the function is available that hacks nodejs into
   accepting the language type.
   This should already be the case in order for `webpack-cli` to parse the config in
@@ -974,7 +969,7 @@ the default theme to be replaced by flipping the `replace` attribute to `true`.
 
 <details>
 <summary>bare</summary>
-<!-- bin/dependency-cruise.js -Tdot -v doc/assets/theming/bare.config.js src/main | dot -Tsvg > doc/assets/theming/bare.svg-->
+<!-- bin/dependency-cruise.mjs -Tdot -v doc/assets/theming/bare.config.js src/main | dot -Tsvg > doc/assets/theming/bare.svg-->
 
 ```javascript
 module.exports = {
@@ -1010,6 +1005,9 @@ module.exports = {
       dot: {
         // collapse onto folders one step below node_modules:
         collapsePattern: "^(node_modules/[^/]+)",
+        // if you additionally collapse to scoped packages (@foo/bar, @foo/baz)
+        // instead of just the scope (@foo) you can use this pattern:
+        // collapsePattern: "^(node_modules/(@[^/]+/[^/]+|[^/]+))",
       },
     },
   },
@@ -1498,6 +1496,20 @@ nothing else you can pass `['.ts', '.json']` - which can lead to performance gai
 on systems with slow i/o (like ms-windows), especially when your tsconfig
 contains paths/ aliases.
 
+#### `mainFields`
+
+A list of main fields in manifests (package.json-s). Typically you'd want to keep
+leave this this on its default (`['main']`) , but if you e.g. use external packages
+that only expose types, and you still want references to these types to be resolved
+you could expand this to `['main', 'types']`.
+
+#### `mainFiles`
+
+> Likely you will not need to use this
+
+A list of files to consider 'main' files, defaults to ['index']. Only set this
+when you have really special needs that that warrant it.
+
 #### cachedInputFileSystem - `cacheDuration`
 
 > Likely you will not need to use this
@@ -1568,8 +1580,34 @@ not bundled with dependency-cruiser.
 > and it _is_ tested, but the interface & format might be changing without
 > dependency-cruiser getting a major bump.
 
-Set where dependency-cruiser's cache folder location should be. Setting it
-to a string implies dependency-cruiser _will_ use caching.
+Indicates if you want to use caching, and if so enables you to tweak how it
+operates.
+
+The long form:
+
+```javascript
+{
+  // ...
+ "options": {
+    cache: {
+      // folder where dependency-cruiser will put its cache files
+      folder: "node_modules/.cache/dependency-cruiser",
+      // cache strategy to use - either 'metadata' (which uses git in the
+      // background) or 'content' (which will look at file content (hashes),
+      // is slower than 'metadata' and is a bleeding edge feature as of
+      // version 12.5.0)
+      strategy: "metadata"
+    }
+    // ...
+  }
+}
+```
+
+It's also possible to shorten this either by providing an empty object or `true`
+(= 'do use caching, but use the default settings'): `cache: {}` or `cache: true`.
+
+For backwards compatibility you can give it a string as well - dependency-cruiser
+will interpret that as the cache folder.
 
 ```javascript
 {
@@ -1582,11 +1620,12 @@ to a string implies dependency-cruiser _will_ use caching.
 }
 ```
 
-It's also possible to pass the value `false` here (also the default) - which
-tells dependency-cruiser to not use its cache feature.
+If you don't want to use caching you cah leave the cache option out altogether or
+use `cache: false`.
 
 As with most settings the command line option of the same name takes
 precedence of whichever is specified here.
 
 See [`--cache`: use a cache to speed up cruising (experimental)](cli.md#--cache-use-a-cache-to-speed-up-cruising-experimental)
-in the command line documentation for more details.
+in the command line documentation for more details on how the caching function
+currently operates.

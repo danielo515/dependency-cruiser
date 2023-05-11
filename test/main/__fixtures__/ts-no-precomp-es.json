@@ -77,8 +77,12 @@
       "metrics": false,
       "moduleSystems": ["es6", "cjs", "tsd", "amd"],
       "preserveSymlinks": false,
+      "tsConfig": {
+        "fileName": "test/main/__mocks__/tsconfig.targetes.json"
+      },
       "tsPreCompilationDeps": false,
-      "args": "test/main/__mocks__/ts-precompilation-deps-off-es"
+      "args": "test/main/__mocks__/ts-precompilation-deps-off-es",
+      "baseDir": ""
     }
   }
 }

@@ -22,7 +22,10 @@
           "(^|/)(babel|webpack)\\.config\\.(js|cjs|mjs|ts|json)$",
           "-reporter-plugin\\.js$",
           "\\.schema\\.json$",
-          "^tools/istanbul-json-summary-to-markdown\\.mjs$"
+          "^tools/istanbul-json-summary-to-markdown\\.mjs$",
+          "^src/report/json\\.mjs",
+          "^src/report/identity\\.mjs",
+          "^src/report/null\\.mjs"
         ]
       }
     },
@@ -38,10 +41,13 @@
           "^src/(main|utl|config-utl)/",
           "^node_modules",
           "^\\.yarn/cache",
-          "^fs$",
+          "^os$",
+          "^fs(/promises)?$",
           "^path$",
+          "^url$",
           "$1",
-          "^src/meta.js$"
+          "^src/meta\\.js$",
+          "^src/extract/transpile/meta\\.mjs$"
         ]
       }
     },
@@ -59,6 +65,7 @@
           "^\\.yarn/cache",
           "^os$",
           "^path$",
+          "^path/posix$",
           "^src/meta\\.js$",
           "^src/graph-utl",
           "^src/utl"
@@ -77,8 +84,9 @@
           "$1",
           "^node_modules",
           "^\\.yarn/cache",
-          "^(path|fs|module|os)$",
+          "^(path|path/posix|fs|module|os)$",
           "^src/meta\\.js$",
+          "^types/",
           "^src/graph-utl",
           "^src/utl"
         ],
@@ -87,7 +95,7 @@
     },
     {
       "name": "not-to-json",
-      "comment": "We don't want to depende on .json modules as long as they're still impractical to work with in ecmascript modules",
+      "comment": "We don't want to depend on .json modules as long as they're still impractical to work with in ecmascript modules",
       "from": { "path": "^src/" },
       "to": {
         "path": "\\.json$"
@@ -103,7 +111,8 @@
           "^src/cli",
           "^node_modules",
           "^\\.yarn/cache",
-          "^src/meta\\.js$"
+          "^src/meta\\.js$",
+          "^os$"
         ]
       }
     },
@@ -113,7 +122,7 @@
       "severity": "error",
       "from": {
         "pathNot": [
-          "^src/(main/resolve-options/normalize\\.js|extract/parse|extract/resolve|extract/gather-initial-sources\\.js|config-utl|cli|cache)",
+          "^src/(main/resolve-options/normalize\\.mjs|extract/parse|extract/resolve|extract/gather-initial-sources\\.mjs|config-utl|cli|cache|utl/find-all-files\\.mjs)",
           "^test",
           "^tools"
         ]
@@ -164,7 +173,7 @@
       "comment": "The only 'exotic' requires allowed are tryRequire and requireJSON",
       "from": {},
       "to": {
-        "exoticRequireNot": "^(tryRequire|requireJSON)$",
+        "exoticRequireNot": "^(tryRequire|tryImport|requireJSON|proxyquire\\.load)$",
         "exoticallyRequired": true
       }
     },
@@ -196,7 +205,7 @@
       "from": { "path": "^bin/" },
       "to": {
         "path": "^src",
-        "pathNot": ["\\.schema\\.json$", "\\.d\\.ts$"],
+        "pathNot": ["\\.schema\\.json$", "\\.d\\.ts$", "^src/report/"],
         "reachable": false
       }
     },
@@ -207,7 +216,7 @@
       "from": { "path": "\\.spec\\.m?js$" },
       "to": {
         "path": "^src",
-        "pathNot": ["\\.schema\\.json$", "\\.d\\.ts$"],
+        "pathNot": ["\\.schema\\.json$", "\\.d\\.ts$", "^src/report/"],
         "reachable": false
       }
     },
@@ -226,7 +235,7 @@
     },
     {
       "name": "utl-module-not-shared-enough",
-      "comment": "(sample rule to demo demo rules based on dependents)",
+      "comment": "(sample rule to demo rules based on dependents)",
       "severity": "info",
       "from": { "path": "^src" },
       "module": { "path": "^src/utl", "numberOfDependentsLessThan": 3 }
@@ -278,14 +287,14 @@
       The (optional) fileName attribute specifies which file to take (relative to dependency-cruiser's
       current working directory. When not provided defaults to './webpack.conf.js'.
 
-      The (optional) `env` and `args` attributes contain the parameters to be passed if
+      The (optional) `env` and `arguments` attributes contain the parameters to be passed if
       your webpack config is a function and takes them (see webpack documentation
       for details)
     */
     // "webpackConfig": {
     // "fileName": "./webpack.conf.js"
     //    "env": {},
-    //    "args": {}
+    //    "arguments": {}
     // },
     // "babelConfig": {
     //   "fileName": "./.babelrc"
@@ -298,12 +307,17 @@
       "conditionNames": ["require"],
       "extensions": [
         ".js",
+        //
         // ".cjs",
-        // ".mjs",
+        ".mjs",
         // ".jsx",
         // ".ts",
+        // ".cts",
+        // ".mts",
         // ".tsx",
         ".d.ts"
+        // ".d.cts",
+        // ".d.mts",
         // ".coffee",
         // ".litcoffee",
         // "cofee.md",
@@ -313,11 +327,19 @@
         // ".svelte"
       ]
     },
-    "exoticRequireStrings": ["tryRequire", "requireJSON"],
-    "highlight": ["src/cache/"],
+    "exoticRequireStrings": [
+      "tryRequire",
+      "tryImport",
+      "requireJSON",
+      "proxyquire.load"
+    ],
     "reporterOptions": {
       "archi": {
-        "collapsePattern": ["^(src|test)/[^/]+", "^bin/", "node_modules/[^/]+"]
+        "collapsePattern": [
+          "^(src|test)/[^/]+",
+          "^bin/",
+          "node_modules/(@[^/]+/[^/]+|[^/]+)"
+        ]
       },
       "dot": {
         "collapsePattern": ["^src/report/[^/]+", "^src/enrich/derive/[^/]+"],
@@ -390,7 +412,7 @@
             },
             {
               "criteria": {
-                "source": "^src/meta\\.js$|\\.template\\.js$|\\.schema\\.js$"
+                "source": "^src/meta\\.js$|\\.template\\.js$|\\.schema\\.mjs$"
               },
               "attributes": { "style": "filled" }
             },
@@ -484,11 +506,28 @@
           "does",
           "hok",
           "duif",
-          "schapen"
+          "schapen",
+          "raam",
+          "roos",
+          "neef",
+          "fik",
+          "gat",
+          "wiel",
+          "zes",
+          "juk",
+          "schop",
+          "voet",
+          "neus",
+          "muur",
+          "bijl",
+          "ei",
+          "ui"
         ]
       }
     },
-    "progress": { "type": "performance-log" },
-    "cache": "node_modules/.cache/dependency-cruiser"
+    "progress": { "type": "performance-log", "maximumLevel": 60 },
+    "cache": {
+      "strategy": "metadata"
+    }
   }
 }

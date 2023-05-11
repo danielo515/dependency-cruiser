@@ -1,7 +1,7 @@
 import { expect, use } from "chai";
 import chaiJSONSchema from "chai-json-schema";
-import { cruise } from "../../src/main/index.js";
-import cruiseResultSchema from "../../src/schema/cruise-result.schema.js";
+import cruise from "../../src/main/cruise.mjs";
+import cruiseResultSchema from "../../src/schema/cruise-result.schema.mjs";
 import { createRequireJSON } from "../backwards.utl.mjs";
 
 const requireJSON = createRequireJSON(import.meta.url);
@@ -34,8 +34,8 @@ use(chaiJSONSchema);
 
 function runFixture(pFixture) {
   if (!Boolean(pFixture.ignore)) {
-    it(pFixture.title, () => {
-      let lResult = cruise(
+    it(pFixture.title, async () => {
+      let lResult = await cruise(
         [pFixture.input.fileName],
         { forceDeriveDependents: true, ...pFixture.input.options },
         {
@@ -43,12 +43,12 @@ function runFixture(pFixture) {
           resolveLicenses: true,
           resolveDeprecations: true,
         }
-      ).output;
+      );
 
-      expect(lResult).to.be.jsonSchema(cruiseResultSchema);
-      expect(lResult.modules).to.deep.equal(pFixture.expected);
-      if (lResult.folders) {
-        expect(lResult.folders).to.deep.equal(pFixture.expectedFolders);
+      expect(lResult.output).to.be.jsonSchema(cruiseResultSchema);
+      expect(lResult.output.modules).to.deep.equal(pFixture.expected);
+      if (lResult.output.folders) {
+        expect(lResult.output.folders).to.deep.equal(pFixture.expectedFolders);
       }
     });
   }

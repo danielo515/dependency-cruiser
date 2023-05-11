@@ -26,11 +26,11 @@ export interface ICruiseResult {
   modules: IModule[];
   /**
    * A list of folders, as derived from the detected modules, with for each
-   * "folder a bunch of metrics (adapted from 'Agile software development:
-   * "principles, patterns, and practices' by Robert C Martin (ISBN 0-13-597444-5).
-   * "Note: these metrics substitute 'components' and 'classes' from that book
-   * "with 'folders' and 'modules'; the closest relatives that work for the most
-   * "programming styles in JavaScript (and its derivative languages).
+   * folder a bunch of metrics (adapted from 'Agile software development:
+   * principles, patterns, and practices' by Robert C Martin (ISBN 0-13-597444-5).
+   * Note: these metrics substitute 'components' and 'classes' from that book
+   * with 'folders' and 'modules'; the closest relatives that work for the most
+   * programming styles in JavaScript (and its derivative languages).
    */
   folders?: IFolder[];
   /**
@@ -139,6 +139,12 @@ export interface IModule {
    * was asked to calculate metrics.
    */
   instability?: number;
+  /**
+   * checksum of the contents of the module. This attribute is currently only
+   * available when the cruise was executed with caching and the cache strategy
+   * is 'content'.
+   */
+  checksum?: string;
 }
 
 export interface IDependency {
@@ -165,10 +171,10 @@ export interface IDependency {
    */
   preCompilationOnly?: boolean;
   /**
-   * 'true' when the module included the module explicitly as type only with the '
-   * type' keyword e.g. import type { IThingus } from 'thing' Dependency-cruiser
+   * 'true' when the module included the module explicitly as type only with the
+   * `type` keyword e.g. `import type { IThingus } from 'thing'`. Dependency-cruiser
    * will only specify this attribute for TypeScript and when the 'tsPreCompilationDeps'
-   * option has either the value true or 'specify'.
+   * option has either the value `true` or `"specify"`.
    */
   typeOnly?: boolean;
   /**
@@ -352,50 +358,7 @@ export interface IOptions extends ICruiseOptions {
    * The rules file used to validate the dependencies (if any)
    */
   rulesFile?: string;
-  /**
-   * The TypeScript configuration file used (if any)
-   */
-  tsConfig?: ITsConfig;
-  /**
-   * The webpack configuration options used for the cruise
-   */
-  webpackConfig?: IWebpackConfig;
-  /**
-   * The Babel configuration file used (if any)
-   */
-  babelConfig?: IBabelConfig;
 }
-
-export interface ITsConfig {
-  fileName?: string;
-}
-
-export interface IBabelConfig {
-  fileName?: string;
-}
-
-/**
- * The webpack configuration options used for the cruise
- */
-export interface IWebpackConfig {
-  /**
-   * The arguments used
-   */
-  arguments?: { [key: string]: any };
-  /**
-   * The 'env' parameters passed
-   */
-  env?: WebpackEnvType;
-  /**
-   * The name of the webpack configuration file used
-   */
-  fileName?: string;
-}
-
-/**
- * The 'env' parameters passed
- */
-export type WebpackEnvType = { [key: string]: any } | string;
 
 export interface IFolderDependency {
   /**

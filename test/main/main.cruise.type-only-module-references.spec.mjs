@@ -1,16 +1,17 @@
 import { expect, use } from "chai";
 import chaiJSONSchema from "chai-json-schema";
-import { cruise } from "../../src/main/index.js";
-import cruiseResultSchema from "../../src/schema/cruise-result.schema.js";
+import cruise from "../../src/main/cruise.mjs";
+import cruiseResultSchema from "../../src/schema/cruise-result.schema.mjs";
 import { createRequireJSON } from "../backwards.utl.mjs";
+import normBaseDirectory from "./norm-base-directory.utl.mjs";
 
 const requireJSON = createRequireJSON(import.meta.url);
 
-const output = requireJSON(
-  "./__mocks__/type-only-module-references/output.json"
+const output = normBaseDirectory(
+  requireJSON("./__mocks__/type-only-module-references/output.json")
 );
-const outputNoTS = requireJSON(
-  "./__mocks__/type-only-module-references/output-no-ts.json"
+const outputNoTS = normBaseDirectory(
+  requireJSON("./__mocks__/type-only-module-references/output-no-ts.json")
 );
 
 use(chaiJSONSchema);
@@ -26,10 +27,10 @@ describe("[E] main.cruise - type only module references", () => {
     process.chdir(WORKING_DIRECTORY);
   });
 
-  it("finds something that's only in node_modules/@types", () => {
+  it("finds something that's only in node_modules/@types", async () => {
     process.chdir("test/main/__mocks__/type-only-module-references");
 
-    const lResult = cruise(
+    const lResult = await cruise(
       ["src"],
       {
         tsPreCompilationDeps: true,
@@ -41,10 +42,10 @@ describe("[E] main.cruise - type only module references", () => {
     expect(lResult.output).to.be.jsonSchema(cruiseResultSchema);
   });
 
-  it("don't find it when not looking for pre-compilation deps", () => {
+  it("don't find it when not looking for pre-compilation deps", async () => {
     process.chdir("test/main/__mocks__/type-only-module-references");
 
-    const lResult = cruise(
+    const lResult = await cruise(
       ["src"],
       {
         tsPreCompilationDeps: false,

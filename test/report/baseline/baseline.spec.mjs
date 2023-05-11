@@ -1,8 +1,8 @@
 import { expect, use } from "chai";
 import chaiJSONSchema from "chai-json-schema";
-import baseline from "../../../src/report/baseline.js";
+import baseline from "../../../src/report/baseline.mjs";
 import { createRequireJSON } from "../../backwards.utl.mjs";
-import baselineSchema from "../../../src/schema/baseline-violations.schema.js";
+import baselineSchema from "../../../src/schema/baseline-violations.schema.mjs";
 
 const requireJSON = createRequireJSON(import.meta.url);
 use(chaiJSONSchema);

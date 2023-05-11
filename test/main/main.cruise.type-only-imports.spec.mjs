@@ -1,14 +1,17 @@
 import { expect, use } from "chai";
 import chaiJSONSchema from "chai-json-schema";
-import { cruise } from "../../src/main/index.js";
-import cruiseResultSchema from "../../src/schema/cruise-result.schema.js";
+import cruise from "../../src/main/cruise.mjs";
+import cruiseResultSchema from "../../src/schema/cruise-result.schema.mjs";
 import { createRequireJSON } from "../backwards.utl.mjs";
+import normBaseDirectory from "./norm-base-directory.utl.mjs";
 
 const requireJSON = createRequireJSON(import.meta.url);
 
-const output = requireJSON("./__mocks__/type-only-imports/output.json");
-const outputWithRules = requireJSON(
-  "./__mocks__/type-only-imports/output-with-rules.json"
+const output = normBaseDirectory(
+  requireJSON("./__mocks__/type-only-imports/output.json")
+);
+const outputWithRules = normBaseDirectory(
+  requireJSON("./__mocks__/type-only-imports/output-with-rules.json")
 );
 
 use(chaiJSONSchema);
@@ -24,10 +27,10 @@ describe("[E] main.cruise - explicitly type only imports", () => {
     process.chdir(WORKING_DIRECTORY);
   });
 
-  it("classifies type only imports as type only in addition to their regular type", () => {
+  it("classifies type only imports as type only in addition to their regular type", async () => {
     process.chdir("test/main/__mocks__/type-only-imports");
 
-    const lResult = cruise(
+    const lResult = await cruise(
       ["src"],
       {
         tsPreCompilationDeps: true,
@@ -39,10 +42,10 @@ describe("[E] main.cruise - explicitly type only imports", () => {
     expect(lResult.output).to.be.jsonSchema(cruiseResultSchema);
   });
 
-  it("flags type only imports when forbidden", () => {
+  it("flags type only imports when forbidden", async () => {
     process.chdir("test/main/__mocks__/type-only-imports");
 
-    const lResult = cruise(
+    const lResult = await cruise(
       ["src"],
       {
         ruleSet: {

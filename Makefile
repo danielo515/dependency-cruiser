@@ -5,15 +5,17 @@ GENERATED_SOURCES=src/cli/init-config/config.js.template.js \
 	src/report/dot/dot.template.js \
 	src/report/html/html.template.js \
 	src/report/error-html/error-html.template.js \
-	src/schema/baseline-violations.schema.js \
-	src/schema/configuration.schema.js \
-	src/schema/cruise-result.schema.js \
+	src/schema/baseline-violations.schema.mjs \
+	src/schema/configuration.schema.mjs \
+	src/schema/cruise-result.schema.mjs \
 	src/schema/baseline-violations.schema.json \
 	src/schema/configuration.schema.json \
 	src/schema/cruise-result.schema.json \
 	src/meta.js
 
 SCHEMA_SOURCES=tools/schema/baseline-violations.schema.mjs \
+	tools/schema/cache-options.mjs \
+	tools/schema/cache-strategy-type.mjs \
 	tools/schema/compound-donot-follow-type.mjs \
 	tools/schema/compound-exclude-type.mjs \
 	tools/schema/compound-focus-type.mjs \
@@ -67,7 +69,7 @@ help:
 src/%.template.js: src/%.template.hbs
 	npx handlebars --min --commonjs handlebars/runtime -f $@ $<
 
-src/%.schema.js: tools/%.schema.mjs $(SCHEMA_SOURCES) tools/generate-schemas.utl.mjs
+src/%.schema.mjs: tools/%.schema.mjs $(SCHEMA_SOURCES) tools/generate-schemas.utl.mjs
 	$(NODE) ./tools/generate-schemas.utl.mjs $@
 
 src/%.schema.json: tools/%.schema.mjs $(SCHEMA_SOURCES) tools/generate-schemas.utl.mjs

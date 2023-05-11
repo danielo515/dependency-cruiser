@@ -1,6 +1,6 @@
-import { EOL } from "os";
+import { EOL } from "node:os";
 import { expect } from "chai";
-import metrics from "../../../src/report/metrics.js";
+import metrics from "../../../src/report/metrics.mjs";
 import cruiseResultWithMetricsForModulesAndFolders from "./__mocks/cruise-result-with-metrics-for-modules-and-folders.mjs";
 
 describe("[I] report/metrics", () => {
@@ -26,7 +26,7 @@ describe("[I] report/metrics", () => {
     });
 
     expect(lResult.exitCode).to.equal(0);
-    expect(lResult.output).to.contain("src      1     1     1    50");
+    expect(lResult.output).to.contain("src       1      1      1    50%");
   });
 
   it("does not emit folder metrics when asked to hide them", () => {
@@ -47,7 +47,7 @@ describe("[I] report/metrics", () => {
     );
 
     expect(lResult.exitCode).to.equal(0);
-    expect(lResult.output).to.not.contain("src      1     1     1    50");
+    expect(lResult.output).to.not.contain("src       1      1      1    50%");
   });
 
   it("emits module metrics (sorted by instability by default)", () => {
@@ -77,7 +77,7 @@ describe("[I] report/metrics", () => {
 
     expect(lResult.exitCode).to.equal(0);
     expect(lResult.output).to.contain(
-      `src/mies.js     1     1     1    50${EOL}src/aap.js      1     1     3    25${EOL}src/noot.js`
+      `src/mies.js      1      1      1    50%${EOL}src/aap.js       1      1      3    25%${EOL}src/noot.js`
     );
   });
 
@@ -111,7 +111,7 @@ describe("[I] report/metrics", () => {
 
     expect(lResult.exitCode).to.equal(0);
     expect(lResult.output).to.contain(
-      `src/aap.js      1     1     3    25${EOL}src/mies.js     1     1     1    50${EOL}src/noot.js`
+      `src/aap.js       1      1      3    25%${EOL}src/mies.js      1      1      1    50%${EOL}src/noot.js`
     );
   });
 
@@ -145,7 +145,7 @@ describe("[I] report/metrics", () => {
 
     expect(lResult.exitCode).to.equal(0);
     expect(lResult.output).to.not.contain(
-      `src/mies.js     1     1     1    50${EOL}src/aap.js      1     1     3    25${EOL}src/noot.js`
+      `src/mies.js      1      1      1     50%${EOL}src/aap.js       1      1      3     25%${EOL}src/noot.js`
     );
   });
 

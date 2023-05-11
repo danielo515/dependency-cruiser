@@ -1,12 +1,12 @@
-import { join } from "path";
-import { unlinkSync } from "fs";
-import { fileURLToPath } from "url";
+import { join } from "node:path";
+import { unlinkSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import symlinkDir from "symlink-dir";
 import { expect } from "chai";
-import normalizeResolveOptions from "../../src/main/resolve-options/normalize.js";
-import { normalizeCruiseOptions } from "../../src/main/options/normalize.js";
+import normalizeResolveOptions from "../../src/main/resolve-options/normalize.mjs";
+import { normalizeCruiseOptions } from "../../src/main/options/normalize.mjs";
 import { createRequireJSON } from "../backwards.utl.mjs";
-import getDependencies from "../../src/extract/get-dependencies.js";
+import getDependencies from "../../src/extract/get-dependencies.mjs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const requireJSON = createRequireJSON(import.meta.url);
@@ -30,12 +30,12 @@ function runFixture(pFixture, pParser = "acorn") {
     lOptions.preserveSymlinks = pFixture.input.preserveSymlinks;
   }
 
-  it(`${pFixture.title} (with '${pParser}' as parser)`, () => {
+  it(`${pFixture.title} (with '${pParser}' as parser)`, async () => {
     expect(
       getDependencies(
         pFixture.input.fileName,
         normalizeCruiseOptions(lOptions),
-        normalizeResolveOptions(
+        await normalizeResolveOptions(
           { bustTheCache: true, resolveLicenses: true },
           normalizeCruiseOptions(lOptions)
         )
@@ -70,9 +70,9 @@ describe("[I] extract/getDependencies - CommonJS - ", () => {
 });
 
 describe("[I] extract/getDependencies - CommonJS - with bangs", () => {
-  it("strips the inline loader prefix from the module name when resolving", () => {
+  it("strips the inline loader prefix from the module name when resolving", async () => {
     const lOptions = normalizeCruiseOptions({ moduleSystems: ["cjs"] });
-    const lResolveOptions = normalizeResolveOptions(
+    const lResolveOptions = await normalizeResolveOptions(
       { bustTheCache: true },
       lOptions
     );
@@ -99,9 +99,9 @@ describe("[I] extract/getDependencies - CommonJS - with bangs", () => {
     ]);
   });
 
-  it("strips multiple inline loader prefixes from the module name when resolving", () => {
+  it("strips multiple inline loader prefixes from the module name when resolving", async () => {
     const lOptions = normalizeCruiseOptions({ moduleSystems: ["cjs"] });
-    const lResolveOptions = normalizeResolveOptions(
+    const lResolveOptions = await normalizeResolveOptions(
       { bustTheCache: true },
       lOptions
     );

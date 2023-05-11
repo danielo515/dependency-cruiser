@@ -1,18 +1,54 @@
-import { IReporterOptions } from "./reporter-options";
-import { IFlattenedRuleSet } from "./rule-set";
-import { ModuleSystemType, OutputType } from "./shared-types";
+import { IBaselineViolations } from "./baseline-violations";
+import { ICacheOptions } from "./cache-options";
 import {
   IDoNotFollowType,
   IExcludeType,
   IFocusType,
+  IHighlightType,
   IIncludeOnlyType,
   IReachesType,
-  IHighlightType,
 } from "./filter-types";
-import { IBaselineViolations } from "./baseline-violations";
+import { IReporterOptions } from "./reporter-options";
+import { IFlattenedRuleSet } from "./rule-set";
+import { ModuleSystemType, OutputType } from "./shared-types";
 
 export type ExternalModuleResolutionStrategyType = "node_modules" | "yarn-pnp";
-export type ProgressType = "cli-feedback" | "performance-log" | "none";
+export type ProgressType =
+  | "cli-feedback"
+  | "performance-log"
+  | "ndjson"
+  | "none";
+
+export interface ITsConfig {
+  fileName?: string;
+}
+
+export interface IBabelConfig {
+  fileName?: string;
+}
+
+/**
+ * The 'env' parameters passed to webpack, if any
+ */
+export type WebpackEnvType = { [key: string]: any } | string;
+
+/**
+ * The webpack configuration options used for the cruise
+ */
+export interface IWebpackConfig {
+  /**
+   * The arguments used
+   */
+  arguments?: { [key: string]: any };
+  /**
+   * The 'env' parameters passed
+   */
+  env?: WebpackEnvType;
+  /**
+   * The name of the webpack configuration file used
+   */
+  fileName?: string;
+}
 
 export interface ICruiseOptions {
   /**
@@ -170,7 +206,7 @@ export interface ICruiseOptions {
   /*
    * List of strings you have in use in addition to cjs/ es6 requires
    * & imports to declare module dependencies. Use this e.g. if you've
-   * redeclared require (`const want = require`), use a require-wrapper
+   * re-declared require (`const want = require`), use a require-wrapper
    * (like semver-try-require) or use window.require as a hack
    *
    * Defaults to `[]`
@@ -180,6 +216,31 @@ export interface ICruiseOptions {
    * Options to tweak the output of reporters
    */
   reporterOptions?: IReporterOptions;
+
+  /**
+   * TypeScript project file ('tsconfig.json') to use for (1) compilation
+   * and (2) resolution (e.g. with the paths property)",
+   */
+  tsConfig?: ITsConfig;
+
+  /**
+   * Webpack configuration to use to get resolve options from
+   */
+  webpackConfig?: IWebpackConfig;
+
+  /**
+   * Babel configuration (e.g. '.babelrc.json') to use.
+   */
+  babelConfig?: IBabelConfig;
+
+  /**
+   * Overrides the parser dependency-cruiser will use - EXPERIMENTAL
+   *
+   * Note that you'll _very_ likely not need this - dependency-cruiser will
+   * typically sort out what the best parser for the job is out of the ones
+   * available
+   */
+  parser?: "acorn" | "tsc" | "swc";
 
   /**
    * Options used in module resolution that for dependency-cruiser's
@@ -210,9 +271,21 @@ export interface ICruiseOptions {
      * attribute. E.g. when you're 100% sure you _only_ have typescript & json
      * and nothing else you can pass `['.ts', '.json']` - which can lead to performance
      * gains on systems with slow i/o (like ms-windows), especially when your
-     * tsconfig contains paths/ aliasses.
+     * tsconfig contains paths/ aliases.
      */
     extensions?: string[];
+    /**
+     * A list of main fields in manifests (package.json s). Typically you'd want
+     * to keep leave this this on its default (['main']) , but if you e.g. use
+     * external packages that only expose types, and you still want references
+     * to these types to be resolved you could expand this to ['main', 'types']
+     */
+    mainFields?: string[];
+    /**
+     * A list of files to consider 'main' files, defaults to ['index']. Only set
+     * this when you have really special needs that warrant it.
+     */
+    mainFiles?: string[];
     /**
      * Options to pass to the resolver (webpack's 'enhanced resolve') regarding
      * caching.
@@ -220,7 +293,7 @@ export interface ICruiseOptions {
     cachedInputFileSystem?: {
       /**
        * The number of milliseconds [enhanced-resolve](webpack/enhanced-resolve)'s
-       * cached file system should use for cache duration. Typicially you won't
+       * cached file system should use for cache duration. Typically you won't
        * have to touch this - the default works well for repos up to 5000 modules/
        * 20000 dependencies, and likely for numbers above as well.
        *
@@ -235,6 +308,7 @@ export interface ICruiseOptions {
       cacheDuration: number;
     };
   };
+
   /**
    * Whether or not to show progress feedback when the command line
    * app is running.
@@ -247,17 +321,31 @@ export interface ICruiseOptions {
      * of each major step to stderr.
      */
     type: ProgressType;
+    /**
+     * The maximum log level to emit messages at. Ranges from OFF (-1, don't " +
+     * show any messages), via SUMMARY (40), INFO (50), DEBUG (60) all the " +
+     * way to show ALL messages (99)."
+     */
+    maximumLevel?: -1 | 40 | 50 | 60 | 70 | 80 | 99;
   };
+
   /**
    * When this flag is set to true, dependency-cruiser will calculate (stability) metrics
    * for all modules and folders. Defaults to false.
    */
   metrics?: boolean;
+
   /**
-   * Location dependency-cruiser will store its cache. 'false' means: don't use
-   * caching. Defaults to false.
+   * - false: don't use caching.
+   * - true or empty object: use caching with the default settings
+   * - a string (deprecated): cache in the folder denoted by the string & use the
+   *   default caching strategy. This is deprecated - instead pass a cache object
+   *   e.g. ```{ folder: 'your/cache/location' }```
+   *
+   * Defaults to false.
+   * When caching is switched on the default cache folder is 'node_modules/.cache/dependency-cruiser/'
    */
-  cache?: false | string;
+  cache?: boolean | string | Partial<ICacheOptions>;
 }
 
 export interface IFormatOptions {

@@ -10,6 +10,7 @@ import dependencyType from "./dependency-type.mjs";
 import moduleSystemsType from "./module-systems-type.mjs";
 import reporterOptions from "./reporter-options.mjs";
 import violations from "./violations.mjs";
+import cacheOptions from "./cache-options.mjs";
 
 export default {
   definitions: {
@@ -257,10 +258,26 @@ export default {
                 type: "string",
               },
             },
+            mainFields: {
+              type: "array",
+              description:
+                "A list of main fields in manifests (package.json s). Typically you'd " +
+                "want to keep leave this this on its default (['main']) , but if " +
+                "you e.g. use external packages that only expose types, and you " +
+                "still want references to these types to be resolved you could expand " +
+                "this to ['main', 'types']",
+            },
+            mainFiles: {
+              type: "array",
+              description:
+                "A list of files to consider 'main' files, defaults to " +
+                "['index']. Only set this when you have really special needs " +
+                "that warrant it.",
+            },
             cachedInputFileSystem: {
               type: "object",
               description:
-                "Options to pass to the resolver (webpack's 'enhanced resolve') regarding" +
+                "Options to pass to the resolver (webpack's 'enhanced resolve') regarding " +
                 "caching.",
               additionalProperties: false,
               properties: {
@@ -332,7 +349,16 @@ export default {
           properties: {
             type: {
               type: "string",
-              enum: ["cli-feedback", "performance-log", "none"],
+              enum: ["cli-feedback", "performance-log", "ndjson", "none"],
+            },
+            maximumLevel: {
+              description:
+                "The maximum log level to emit messages at. Ranges from OFF (-1, don't " +
+                "show any messages), via SUMMARY (40), INFO (50), DEBUG (60) all the " +
+                "way to show ALL messages (99).",
+              type: "number",
+              // eslint-disable-next-line no-magic-numbers
+              enum: [-1, 40, 50, 60, 70, 80, 99],
             },
           },
         },
@@ -352,16 +378,20 @@ export default {
           oneOf: [
             {
               type: "boolean",
-              enum: [false],
             },
             {
               type: "string",
             },
+            { $ref: "#/definitions/CacheOptionsType" },
           ],
           description:
-            "When set to true dependency-cruiser will cache its results in node_modules/.cache/dependency-cruiser. " +
-            "When passed a string dependency-cruiser will cache in the folder designated by the string." +
-            "Defaults to false.",
+            "- false: don't use caching. \n" +
+            "- true or empty object: use caching with the default settings \n" +
+            "- a string (deprecated): cache in the folder denoted by the string & use the \n" +
+            "  default caching strategy. This is deprecated - instead pass a cache object \n" +
+            "  e.g. ```{ folder: 'your/cache/location' }```.\n\n" +
+            "Defaults to false (no caching).\n" +
+            "When caching is switched on the default cache folder is 'node_modules/.cache/dependency-cruiser/'",
         },
       },
     },
@@ -376,5 +406,6 @@ export default {
     ...reporterOptions.definitions,
     ...REAsStringsType.definitions,
     ...violations.definitions,
+    ...cacheOptions.definitions,
   },
 };

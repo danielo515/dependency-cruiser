@@ -1,11 +1,11 @@
-import { unlinkSync, readFileSync } from "fs";
+import { unlinkSync, readFileSync } from "node:fs";
 // path.posix instead of path because otherwise on win32 the resulting
 // outputTo would contain \\ instead of / which for this unit test doesn't matter
-import { posix as path } from "path";
+import { join, posix as path } from "node:path";
 import { expect } from "chai";
 import intercept from "intercept-stdout";
 import chalk from "chalk";
-import cli from "../../src/cli/index.js";
+import cli from "../../src/cli/index.mjs";
 import { assertFileEqual, assertJSONFileEqual } from "./asserthelpers.utl.mjs";
 import deleteDammit from "./delete-dammit.utl.cjs";
 
@@ -115,7 +115,10 @@ const TEST_PAIRS = [
       doNotFollow: "node_modules",
       ruleSet: {
         options: {
-          baseDir: "test/cli/__fixtures__/alternate-basedir",
+          baseDir: join(
+            process.cwd(),
+            "test/cli/__fixtures__/alternate-basedir"
+          ),
         },
       },
     },
@@ -177,8 +180,8 @@ function setModuleType(pTestPairs, pModuleType) {
 
 function runFileBasedTests(pModuleType) {
   setModuleType(TEST_PAIRS, pModuleType).forEach((pPair) => {
-    it(pPair.description, () => {
-      const lExitCode = cli([pPair.dirOrFile], pPair.options);
+    it(pPair.description, async () => {
+      const lExitCode = await cli([pPair.dirOrFile], pPair.options);
 
       expect(lExitCode).to.equal(pPair.expectExitCode);
       if (pPair.options.outputType === "json") {
@@ -214,10 +217,10 @@ describe("[E] cli/index", () => {
     after("enable chalk coloring again", () => {
       chalk.level = lChalkLevel;
     });
-    it("dependency-cruises multiple files and folders in one go", () => {
+    it("dependency-cruises multiple files and folders in one go", async () => {
       const lOutputFileName = "multiple-in-one-go.json";
       const lOutputTo = path.join(OUT_DIR, lOutputFileName);
-      const lExitCode = cli(
+      const lExitCode = await cli(
         [
           "test/cli/__fixtures__/cjs/sub",
           "test/cli/__fixtures__/duplicate-subs/sub/more-in-sub.js",
@@ -233,10 +236,10 @@ describe("[E] cli/index", () => {
       assertJSONFileEqual(lOutputTo, path.join(FIX_DIR, lOutputFileName));
     });
 
-    it("returns 0 even if there's transgressions when outputType !== 'error' ", () => {
+    it("returns 0 even if there's transgressions when outputType !== 'error' ", async () => {
       const lOutputFileName = "transgression-count.json";
       const lOutputTo = path.join(OUT_DIR, lOutputFileName);
-      const lExitCode = cli(["test/cli/__fixtures__/cjs"], {
+      const lExitCode = await cli(["test/cli/__fixtures__/cjs"], {
         outputTo: lOutputTo,
         outputType: "json",
         validate: "test/cli/__fixtures__/rules.sub-not-allowed-error.json",
@@ -246,10 +249,10 @@ describe("[E] cli/index", () => {
       expect(lExitCode).to.equal(lExpectedTransgressions);
     });
 
-    it("returns the number of transgressions if outputType === 'error' ", () => {
+    it("returns the number of transgressions if outputType === 'error' ", async () => {
       const lOutputFileName = "transgression-count.json";
       const lOutputTo = path.join(OUT_DIR, lOutputFileName);
-      const lExitCode = cli(["test/cli/__fixtures__/cjs"], {
+      const lExitCode = await cli(["test/cli/__fixtures__/cjs"], {
         outputTo: lOutputTo,
         outputType: "err",
         validate: "test/cli/__fixtures__/rules.sub-not-allowed-error.json",
@@ -259,12 +262,12 @@ describe("[E] cli/index", () => {
       expect(lExitCode).to.equal(lExpectedTransgressions);
     });
 
-    it("dependency-cruise -i shows meta info about the current environment", () => {
+    it("dependency-cruise -i shows meta info about the current environment", async () => {
       let lCapturedStdout = "";
       const unhookIntercept = intercept((pText) => {
         lCapturedStdout += pText;
       });
-      const lExitCode = cli(null, { info: true });
+      const lExitCode = await cli(null, { info: true });
 
       unhookIntercept();
 
@@ -274,7 +277,7 @@ describe("[E] cli/index", () => {
       );
     });
 
-    it("dependency-cruise -f cjs.dir.wontmarch.json this-doesnot-exist - non-existing generates an error", () => {
+    it("dependency-cruise -f cjs.dir.wontmarch.json this-doesnot-exist - non-existing generates an error", async () => {
       let lCapturedStderr = "";
       const unhookInterceptStdOut = intercept(() => {
         // This space intentionally left empty
@@ -282,7 +285,7 @@ describe("[E] cli/index", () => {
       const unhookInterceptStdError = intercept((pText) => {
         lCapturedStderr += pText;
       });
-      const lExitCode = cli(["this-doesnot-exist"], {
+      const lExitCode = await cli(["this-doesnot-exist"], {
         outputTo: path.join(OUT_DIR, "cjs.dir.wontmarch.json"),
       });
 
@@ -290,12 +293,12 @@ describe("[E] cli/index", () => {
       unhookInterceptStdError();
 
       expect(lExitCode).to.equal(1);
-      return expect(lCapturedStderr).to.contain(
+      expect(lCapturedStderr).to.contain(
         "ERROR: Can't open 'this-doesnot-exist' for reading. Does it exist?\n"
       );
     });
 
-    it("dependency-cruise -f file/you/cant/write/to - generates an error", () => {
+    it("dependency-cruise -f file/you/cant/write/to - generates an error", async () => {
       let lCapturedStderr = "";
       const unhookInterceptStdOut = intercept(() => {
         // This space intentionally left empty
@@ -303,7 +306,7 @@ describe("[E] cli/index", () => {
       const unhookInterceptStdError = intercept((pText) => {
         lCapturedStderr += pText;
       });
-      const lExitCode = cli(["test/cli/__fixtures__"], {
+      const lExitCode = await cli(["test/cli/__fixtures__"], {
         outputTo: path.join(OUT_DIR, "file/you/cant/write/to"),
       });
 
@@ -314,12 +317,12 @@ describe("[E] cli/index", () => {
       })();
 
       expect(lExitCode).to.equal(1);
-      return expect(lCapturedStderr).to.contain(
+      expect(lCapturedStderr).to.contain(
         "didn't work. Error: ENOENT: no such file or directory, open"
       );
     });
 
-    it("dependency-cruise test/cli/__fixtures__ without rules will report no dependency violations on stdout", () => {
+    it("dependency-cruise test/cli/__fixtures__ without rules will report no dependency violations on stdout", async () => {
       let lCapturedStderr = "";
       const unhookInterceptStdOut = intercept(() => {
         // This space intentionally left empty
@@ -327,7 +330,7 @@ describe("[E] cli/index", () => {
       const unhookInterceptStdError = intercept((pText) => {
         lCapturedStderr += pText;
       });
-      const lExitCode = cli(["test/cli/__fixtures__"]);
+      const lExitCode = await cli(["test/cli/__fixtures__"]);
 
       unhookInterceptStdOut();
       unhookInterceptStdError();
@@ -336,12 +339,10 @@ describe("[E] cli/index", () => {
       })();
 
       expect(lExitCode).to.equal(0);
-      return expect(lCapturedStderr).to.contain(
-        "no dependency violations found"
-      );
+      expect(lCapturedStderr).to.contain("no dependency violations found");
     });
 
-    it("dependency-cruise --init will generate a rules file and tells that back on stdout", () => {
+    it("dependency-cruise --init will generate a rules file and tells that back on stdout", async () => {
       let lCapturedStdout = "";
       const lValidationFileName = ".dependency-cruiser.js";
       const unhookInterceptStdOut = intercept((pText) => {
@@ -352,7 +353,7 @@ describe("[E] cli/index", () => {
       });
 
       deleteDammit(lValidationFileName);
-      const lExitCode = cli(["test/cli/__fixtures__"], {
+      const lExitCode = await cli(["test/cli/__fixtures__"], {
         init: "js",
       });
 
@@ -369,10 +370,10 @@ describe("[E] cli/index", () => {
       deleteDammit(lValidationFileName);
     });
 
-    it("dependency-cruise with a --webpack-config with an object export will respect the resolve stuff in there", () => {
+    it("dependency-cruise with a --webpack-config with an object export will respect the resolve stuff in there", async () => {
       const lOutputFileName = "webpack-config-alias.json";
       const lOutputTo = path.join(OUT_DIR, lOutputFileName);
-      const lExitCode = cli(
+      const lExitCode = await cli(
         ["test/cli/__fixtures__/webpackconfig/aliassy/src"],
         {
           outputTo: lOutputTo,
@@ -386,10 +387,10 @@ describe("[E] cli/index", () => {
       assertJSONFileEqual(lOutputTo, path.join(FIX_DIR, lOutputFileName));
     });
 
-    it("dependency-cruise with a .dependency-cruiser config with a webpackConfig section will respect that config", () => {
+    it("dependency-cruise with a .dependency-cruiser config with a webpackConfig section will respect that config", async () => {
       const lOutputFileName = "webpack-config-alias-cruiser-config.json";
       const lOutputTo = path.join(OUT_DIR, lOutputFileName);
-      const lExitCode = cli(
+      const lExitCode = await cli(
         ["test/cli/__fixtures__/webpackconfig/aliassy/src"],
         {
           outputTo: lOutputTo,
@@ -404,10 +405,10 @@ describe("[E] cli/index", () => {
     });
   });
 
-  it("dependency-cruise with a --ts-config will respect the configuration in there (working dynamic imports)", () => {
+  it("dependency-cruise with a --ts-config will respect the configuration in there (working dynamic imports)", async () => {
     const lOutputFileName = "dynamic-import-ok.json";
     const lOutputTo = path.join(OUT_DIR, lOutputFileName);
-    const lExitCode = cli(
+    const lExitCode = await cli(
       [
         "test/cli/__fixtures__/typescriptconfig/cli-dynamic-imports/import_dynamically.ts",
       ],
@@ -423,10 +424,10 @@ describe("[E] cli/index", () => {
     assertJSONFileEqual(lOutputTo, path.join(FIX_DIR, lOutputFileName));
   });
 
-  it("dependency-cruise with a --ts-config will respect the configuration in there", () => {
+  it("dependency-cruise with a --ts-config will respect the configuration in there", async () => {
     const lOutputFileName = "dynamic-import-nok.json";
     const lOutputTo = path.join(OUT_DIR, lOutputFileName);
-    const lExitCode = cli(
+    const lExitCode = await cli(
       [
         "test/cli/__fixtures__/typescriptconfig/cli-dynamic-imports/import_dynamically2.ts",
       ],
@@ -442,11 +443,11 @@ describe("[E] cli/index", () => {
     assertJSONFileEqual(lOutputTo, path.join(FIX_DIR, lOutputFileName));
   });
 
-  it("dependency-cruise with a --ts-config with a path will resolve 'path' things", () => {
+  it("dependency-cruise with a --ts-config with a path will resolve 'path' things", async () => {
     const lOutputFileName = "typescript-path-resolution.json";
     const lOutputTo = path.join(OUT_DIR, lOutputFileName);
 
-    const lExitCode = cli(
+    const lExitCode = await cli(
       ["test/cli/__fixtures__/typescriptconfig/cli-config-with-path/src"],
       {
         outputTo: lOutputTo,
@@ -462,11 +463,11 @@ describe("[E] cli/index", () => {
     assertJSONFileEqual(lOutputTo, path.join(FIX_DIR, lOutputFileName));
   });
 
-  it("dependency-cruise with a babelConfig will use that (es6 edition)", () => {
+  it("dependency-cruise with a babelConfig will use that (es6 edition)", async () => {
     const lOutputFileName = "babel-es6-result.json";
     const lOutputTo = path.join(OUT_DIR, lOutputFileName);
 
-    const lExitCode = cli(["test/cli/__fixtures__/babel/es6/src"], {
+    const lExitCode = await cli(["test/cli/__fixtures__/babel/es6/src"], {
       outputTo: lOutputTo,
       outputType: "json",
       babelConfig: "test/cli/__fixtures__/babel/es6/babelrc.valid.json",
@@ -481,11 +482,11 @@ describe("[E] cli/index", () => {
     );
   });
 
-  it("dependency-cruise with a babelConfig will use that (TypeScript edition)", () => {
+  it("dependency-cruise with a babelConfig will use that (TypeScript edition)", async () => {
     const lOutputFileName = "babel-ts-result.json";
     const lOutputTo = path.join(OUT_DIR, lOutputFileName);
 
-    const lExitCode = cli(["test/cli/__fixtures__/babel/ts/src"], {
+    const lExitCode = await cli(["test/cli/__fixtures__/babel/ts/src"], {
       outputTo: lOutputTo,
       outputType: "json",
       babelConfig: "test/cli/__fixtures__/babel/ts/babelrc.json",
@@ -500,16 +501,19 @@ describe("[E] cli/index", () => {
     );
   });
 
-  it("dependency-cruise on a violation-ridden code base will return the errors", () => {
+  it("dependency-cruise on a violation-ridden code base will return the errors", async () => {
     const lOutputFileName = "known-errors-not-known.txt";
     const lOutputTo = path.join(OUT_DIR, lOutputFileName);
     const lExpectedAmountOfErrors = 2;
 
-    const lExitCode = cli(["test/cli/__fixtures__/known-violations/src"], {
-      outputTo: lOutputTo,
-      outputType: "err",
-      validate: "test/cli/__fixtures__/known-violations/config.js",
-    });
+    const lExitCode = await cli(
+      ["test/cli/__fixtures__/known-violations/src"],
+      {
+        outputTo: lOutputTo,
+        outputType: "err",
+        validate: "test/cli/__fixtures__/known-violations/config.js",
+      }
+    );
 
     expect(lExitCode).to.equal(lExpectedAmountOfErrors);
 
@@ -519,18 +523,21 @@ describe("[E] cli/index", () => {
     // );
   });
 
-  it("dependency-cruise on a violation-ridden code base with known errors will only return unknown errors", () => {
+  it("dependency-cruise on a violation-ridden code base with known errors will only return unknown errors", async () => {
     const lOutputFileName = "known-errors-known.txt";
     const lOutputTo = path.join(OUT_DIR, lOutputFileName);
     let lResult = "";
     const lExpectedAmountOfErrors = 1;
 
-    const lExitCode = cli(["test/cli/__fixtures__/known-violations/src"], {
-      outputTo: lOutputTo,
-      outputType: "err",
-      validate: "test/cli/__fixtures__/known-violations/config.js",
-      ignoreKnown: "test/cli/__fixtures__/known-violations/known.json",
-    });
+    const lExitCode = await cli(
+      ["test/cli/__fixtures__/known-violations/src"],
+      {
+        outputTo: lOutputTo,
+        outputType: "err",
+        validate: "test/cli/__fixtures__/known-violations/config.js",
+        ignoreKnown: "test/cli/__fixtures__/known-violations/known.json",
+      }
+    );
 
     expect(lExitCode).to.equal(lExpectedAmountOfErrors);
     expect(() => {
@@ -542,18 +549,21 @@ describe("[E] cli/index", () => {
     expect(lResult).to.contain("1 known violations ignored");
   });
 
-  it("will barf when the known violations file is invalid", () => {
+  it("will barf when the known violations file is invalid", async () => {
     const lOutputFileName = "this-thing-likely-wont-exist.txt";
     const lOutputTo = path.join(OUT_DIR, lOutputFileName);
     const lExpectedAmountOfErrors = 1;
 
-    const lExitCode = cli(["test/cli/__fixtures__/known-violations/src"], {
-      outputTo: lOutputTo,
-      outputType: "err",
-      validate: "test/cli/__fixtures__/known-violations/config.js",
-      ignoreKnown:
-        "test/cli/__fixtures__/known-violations/invalid-known-violations-file.json",
-    });
+    const lExitCode = await cli(
+      ["test/cli/__fixtures__/known-violations/src"],
+      {
+        outputTo: lOutputTo,
+        outputType: "err",
+        validate: "test/cli/__fixtures__/known-violations/config.js",
+        ignoreKnown:
+          "test/cli/__fixtures__/known-violations/invalid-known-violations-file.json",
+      }
+    );
 
     expect(lExitCode).to.equal(lExpectedAmountOfErrors);
     expect(() => {

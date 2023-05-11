@@ -293,6 +293,30 @@ dependency in your project. That way it will automatically use the same
 versions of compiler tooling as your project does, which will give the most
 reliable results.
 
+### Q: dependency-cruiser complains it cannot resolve a type from an external package. What to do?
+
+**A**: add a `mainFields` attribute to the `options.enhancedResolveOptions` section
+in your .dependency-cruiser.js that tells it to _also_ look for the _types_ field
+in that external package package.json e.g. like so:
+
+```JavaScript
+{
+  // rules: [],
+  options: {
+    enhancedResolveOptions: {
+      mainFields: ["main", "types"]
+    }
+    // other options ...
+  }
+}
+```
+
+Dependency-cruiser uses the defaults of `enhanced-resolve`, which (correctly,
+as per node.js specification) looks at `main` and `export` fields in package.json,
+in addition to files named `index` (.js, .mjs, .cjs, ...). It can be instructed
+to also look at other fields with this `mainFields` attribute, which
+dependency-cruiser will 1:1 pass on to it.
+
 ## Features
 
 ### Q: How do I enable TypeScript, CoffeeScript or LiveScript in dependency-cruiser?
@@ -427,7 +451,7 @@ your dependencies. This includes any `alias` you might have in there.
 Currently dependency-cruiser supports a reasonable subset of webpack
 config file formats:
 
-- nodejs parsable JavaScript only
+- nodejs parsable JavaScript only (_including_ ESM)
 - webpack 4 compatible and up (although earlier ones _might_ work
   there's no guarantee)
 - exporting either:
@@ -435,9 +459,10 @@ config file formats:
   - a function (webpack 4 style, taking up to two parameters)
   - an array of the above (where dependency-cruiser takes the
     first element in the array)
-
-Support for other formats (promise exports, TypeScript, fancier
-ECMAScript) might come later.
+- other formats (TypeScript, yaml, LiveScript, ...) will work if the function
+  is available that hacks node into understanding it. If you use a format like
+  this for your webpack configuration, it's likely this function is already
+  available.
 
 </details>
 
@@ -530,6 +555,13 @@ used to determine if a package was declared as dependency.
 From version 9.21.3 this works automatically. In earlier versions (from 4.14.0)
 you only needed to `yarn-pnp` into _externalModuleResolutionStrategy_ key in
 the config (--init took care of that), but that's not necessary anymore.
+
+As of version 13.0.0 dependency-cruiser does not work with the pnp from
+yarn 1.x.x anymore. The yarn team has done only life cycle management and security
+fixes on that version for several years - but encourages everyone to migrate over
+to yarn 3. Our guess is that everyone who is serious about using yarn pnp has
+already done so long ago. Moreover the old yarn 1 pnp version was holding us
+back from moving on with the nodejs and javascript ecosystem.
 
 </details>
 
@@ -652,9 +684,8 @@ If you have an issue, suggestion - don't hesitate to create an
 [issue](https://github.com/sverweij/dependency-cruiser/issues/new/choose).
 
 You're welcome to create a pull request - if it's something more complex it's
-probably wise to first create an issue or hit
-[@mcmeadow](https://twitter.com/mcmeadow) up on twitter.
+probably wise to first create an issue or hit [@mcmeadow@mstdn.social](https://mstdn.social/@mcmeadow)
+up on Mastodon (or on twitter, while it lasts: [@mcmeadow](https://twitter.com/mcmeadow))
 
 For things that don't fit an issue or pull request you're welcome to
-contact the [@mcmeadow](https://twitter.com/mcmeadow) twitter account as well
-(checked at approximately daily intervals).
+contact these accounts as well (checked at approximately daily intervals).

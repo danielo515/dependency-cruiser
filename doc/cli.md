@@ -18,10 +18,13 @@ available in dependency-cruiser configurations.
 1. [arguments - files and/ or directories](#arguments---files-and-or-directories)
 1. [`--output-type`: specify the output format](#--output-type-specify-the-output-format)
 1. [`--config`/ `--validate`: use a configuration with rules and/or options](#--config---validate)
+1. [`--no-config`: do not use a configuration file](#--no-config)
 1. [`--init`](#--init)
 1. [`--metrics`: calculate stability metrics](#--metrics)
+1. [`--no-metrics`: do not calculate stability metrics](#--no-metrics)
 1. [`--info`: show what alt-js are supported](#--info-showing-what-alt-js-are-supported)
 1. [`--ignore-known`: ignore known violations](#--ignore-known-ignore-known-violations)
+1. [`--no-ignore-known`: don't ignore known violations](#--no-ignore-known)
 1. [`--help`/ no parameters: get help](#--help--no-parameters)
 
 ### Options also available in dependency-cruiser configurations
@@ -35,7 +38,8 @@ available in dependency-cruiser configurations.
 1. [`--collapse`: summarize to folder depth or pattern](#--collapse-summarize-to-folder-depth-or-pattern)
 1. [`--exclude`: exclude dependencies from being cruised](#--exclude-exclude-dependencies-from-being-cruised)
 1. [`--max-depth`](#--max-depth)
-1. [`--progress`: get feedback on what dependency-cruiser is doing while it's running](#--progress-get-feedbakc-on-what-dependency-cruiser-is-doing-while-its-running)
+1. [`--progress`: get feedback on what dependency-cruiser is doing while it's running](#--progress-get-feedback-on-what-dependency-cruiser-is-doing-while-its-running)
+1. [`--no-progress`: don't show feedback on what dependency-cruiser is doing](#--no-progress-dont-show-feedback-on-what-dependency-cruiser-is-doing)
 1. [`--prefix` prefixing links](#--prefix-prefixing-links)
 1. [`--module-systems`](#--module-systems)
 1. [`--ts-pre-compilation-deps` (typescript only)](#--ts-pre-compilation-deps-typescript-only)
@@ -43,6 +47,8 @@ available in dependency-cruiser configurations.
 1. [`--webpack-config`: use (the resolution options of) a webpack configuration`](#--webpack-config-use-the-resolution-options-of-a-webpack-configuration)
 1. [`--preserve-symlinks`](#--preserve-symlinks)
 1. [`--cache`: use a cache to speed up cruising (experimental)](#--cache-use-a-cache-to-speed-up-cruising-experimental)
+1. [`--cache-strategy`: influence how the cache functionality detects changes (experimental)](#--cache-strategy-influence-how-the-cache-functionality-detects-changes-experimental)
+1. [`--no-cache`: switch off caching](#--no-cache-switch-off-caching)
 
 ### Standalone formatting of dependency graphs: [depcruise-fmt](#depcruise-fmt)
 
@@ -108,7 +114,7 @@ This will:
   will exit with exit code _number of violations with severity `error` found_
   in the same fashion linters and test tools do.
 
-See the _depcruise_ target in the [package.json](https://github.com/sverweij/dependency-cruiser/blob/master/package.json#L55)
+See the _depcruise_ target in the [package.json](https://github.com/sverweij/dependency-cruiser/blob/develop/package.json#L55)
 for a real world example.
 
 #### err-long
@@ -491,66 +497,6 @@ so it's easier to compare than the two json's):
 Generates a list of all current violations you can use as input for the
 [`--ignore-known`](#--ignore-known-ignore-known-violations) option.
 
-### `--config`/ `--validate`
-
-Validates against a list of rules in a configuration file. This defaults to a file
-called `.dependency-cruiser.js` (/ `.dependency-cruiser.cjs`/
-`.dependency-cruiser.json`), but you can specify your own rules file, which can
-be in json format or a valid node module returning a rules object literal.
-
-```shell
-dependency-cruise -x node_modules --config my.rules.json src spec
-```
-
-> _Tip_: usually you don't need to specify the rules file. However if run
-> `depcruise --config src`, _src_ will be interpreted as the rules file.
-> Which is probably is not what you want. To prevent this, place `--`
-> after the last option, like so:
->
-> ```
-> dependency-cruise --config -- src
-> ```
-
-The configuration specifies a bunch of regular expressions pairs your dependencies
-should adhere tom as well as configuration options that tweak what is cruised and
-how.
-
-A simple validation configuration that forbids modules in `src` to use stuff
-in the `test` folder and allows everything else:
-
-```json
-{
-  "forbidden": [
-    {
-      "from": { "path": "^src" },
-      "to": { "path": "^test" }
-    }
-  ]
-}
-```
-
-You can optionally specify a name and an error severity ('error', 'warn' (the
-default) and 'info') with them that will appear in some reporters:
-
-```json
-{
-  "forbidden": [
-    {
-      "name": "no-src-to-test",
-      "severity": "error",
-      "from": { "path": "^src" },
-      "to": { "path": "^test" }
-    }
-  ]
-}
-```
-
-For more information about writing rules see the [tutorial](rules-tutorial.md) and the
-[rules-reference](rules-reference.md). For options check out the
-[options reference](options-reference.md).
-
-For an easy set up of both use [--init](#--init)
-
 #### metrics - generate a report with stability metrics for each folder
 
 Shows for each module and each folder:
@@ -664,6 +610,89 @@ src/validate/utl.js                                       1     3     0  0
 
 </details>
 
+### `--config`/ `--validate`
+
+Validates against a list of rules in a configuration file. This defaults to a file
+called `.dependency-cruiser.js` (/ `.dependency-cruiser.cjs`/
+`.dependency-cruiser.json`), but you can specify your own rules file, which can
+be in json format or a valid node module returning a rules object literal.
+
+```shell
+dependency-cruise -x node_modules --config my.rules.json src spec
+```
+
+> _Caveat_: up to version 12, you needed to specify the `--config` command line
+> option in order for a config file to be used at all. As of version 13 picking
+> up a config file is the default, so you don't need to specify `--config` anymore
+> _unless_ you want to have an alternate name or location for it.
+> If you want to run _without_ a configuration file use --no-config
+
+> _Tip_: usually you don't need to specify the rules file after --config. However
+> if you run `depcruise --config src`, _src_ will be interpreted as the rules file.
+> Which is probably is not what you want. To prevent this, place `--`
+> after the last option, like so:
+>
+> ```
+> dependency-cruise --config -- src
+> ```
+
+The configuration specifies a bunch of regular expressions pairs your dependencies
+should adhere tom as well as configuration options that tweak what is cruised and
+how.
+
+A simple validation configuration that forbids modules in `src` to use stuff
+in the `test` folder and allows everything else:
+
+```json
+{
+  "forbidden": [
+    {
+      "from": { "path": "^src" },
+      "to": { "path": "^test" }
+    }
+  ]
+}
+```
+
+You can optionally specify a name and an error severity ('error', 'warn' (the
+default) and 'info') with them that will appear in some reporters:
+
+```json
+{
+  "forbidden": [
+    {
+      "name": "no-src-to-test",
+      "severity": "error",
+      "from": { "path": "^src" },
+      "to": { "path": "^test" }
+    }
+  ]
+}
+```
+
+For more information about writing rules see the [tutorial](rules-tutorial.md) and the
+[rules-reference](rules-reference.md). For options check out the
+[options reference](options-reference.md).
+
+For an easy set up of both use [--init](#--init)
+
+#### null - no output, just an exit code
+
+This dummy 'reporter' will print _nothing_, not even when there are errors. It
+will exit with the exit code _number of violations with severity `error` found_,
+though. This reporter primarily exists to help in the development of
+dependency-cruiser.
+
+### `--no-config`
+
+Use this if you don't want to use a configuration file. Also overrides earlier
+specified --config (or --validate) options.
+
+> If you actually use this, I'm interested in your use case. Please drop an
+> [issue on GitHub](https://github.com/sverweij/dependency-cruiser/issues/new?assignees=&labels=&template=use-without-config.md&title=I+use+dependency-cruiser+without+a+configuration+file.+This+is+why:) or contact me on mastodon
+> ([@mcmeadow@mstdn.social](https://mstdn.social/@mcmeadow)) or twitter
+> ([@mcmeadow](https://twitter.com/mcmeadow)).
+
 ### `--init`
 
 This asks some questions and - depending on the answers - creates a dependency-cruiser
@@ -712,6 +741,12 @@ Currently this output is only reflected in the `json` and the
   need to specify it there.
 - Not on by default as it's relatively resource intensive (especially when
   dependency-cruiser doesn't already derives dependents of folders.)
+
+### `--no-metrics`
+
+Do not calculate metrics. You can use this to override an earlier set `--metrics`
+command line option or `metrics` option in a .dependency-cruiser.js configuration
+file.
 
 ### `--info` showing what alt-js are supported
 
@@ -795,7 +830,7 @@ warning if there's violations ignored:
 
 ```
 ✔ no dependency violations found (454 modules, 1078 dependencies cruised)
-⚠ 20 known violations ignored. Run without --ignore-known to see them.
+⚠ 20 known violations ignored. Run with --no-ignore-known to see them.
 ```
 
 #### When is this useful?
@@ -804,14 +839,33 @@ When you first deploy dependency-cruiser in a large code base chances are it wil
 detect quite some violations - even when it only uses the default set of rules
 that comes with `--init`. It will not always possible to fix all the violations
 right away. This means that any run of dependency-cruiser will show violations
-you already decided to fix later - possibly burrying any new violations (which
+you already decided to fix later - possibly burying any new violations (which
 you probably want to avoid).
 
 With this option you can avoid that.
 
+### `--no-ignore-known`
+
+Don't ignore known violations. Use this if you want to override an `--ignore-known`
+option set earlier on the command line.
+
 ### `--help` / no parameters
 
-Running with no parameters or with `--help` gets you help.
+Running with no parameters or with `--help` gets you help. It doesn't show all
+options documented here in order to keep it inviting to use. The ones left out
+are:
+
+- the _implied_ ones (e.g. `--config` implies the existence of
+  a `--no-config` option).
+- ones that have an _alias_ to prevent a breaking change
+  (`--validate` is an alias for `--config`).
+- ones that have been superseded by better options but were left in for
+  backwards compatibility. E.g. `--max-depth` has been superseded by the
+  `--focus`/ `--focus-depth` and `--collapse` which are both more powerful
+  and mor to the point for most use cases.
+- those that better live in the configuration file, but are still cli
+  options for backwards compatibility (e.g. `--ts-config`, `--webpack-config`,
+  `--ts-pre-compilation-deps`, `--module-systems`, `--preserve-symlinks`)
 
 ## Options also available in dependency-cruiser configurations
 
@@ -1067,22 +1121,34 @@ stay in view when dependency-cruiser is done.
 <summary>Typical output</summary>
 
 ```
-  elapsed heapTotal  heapUsed after step...
-    712ms      72Mb      46Mb start of node process
-      2ms      72Mb      46Mb parsing options
-    100ms      73Mb      56Mb parsing rule set
-      0ms      73Mb      56Mb making sense of files and directories
-      0ms      73Mb      56Mb determining how to resolve
-   1874ms     158Mb     138Mb reading files
-      0ms     158Mb     138Mb analyzing
-     17ms     161Mb     131Mb analyzing: cycles
-      3ms     161Mb     132Mb analyzing: orphans
-    161ms     163Mb     140Mb analyzing: reachables
-      0ms     163Mb     140Mb analyzing: add focus (if any)
-     51ms     163Mb     135Mb analyzing: validations
-      2ms     163Mb     135Mb reporting
-      0ms     163Mb     135Mb really done (2924ms)
+ elapsed real          user        system         ∆ rss   ∆ heapTotal    ∆ heapUsed    ∆ external after step...
+------------- ------------- ------------- ------------- ------------- ------------- ------------- -------------
+        785ms         813ms          98ms    +132,384kB     +85,020kB     +62,483kB      +2,280kB start of node process
+         12ms          11ms           1ms      +1,148kB        +256kB        +785kB           0kB parsing options
+         79ms          18ms           5ms      +2,492kB        +548kB      +1,731kB        +541kB cache: check freshness with metadata
+        187ms         345ms          11ms     +18,620kB      +7,024kB      +9,037kB      -1,430kB parsing rule set
+          0ms           2ms           0ms          +8kB           0kB         +28kB           0kB determining how to resolve
+          0ms           1ms           0ms         +24kB           0kB          +9kB           0kB reading files
+         23ms          32ms           7ms        +724kB      +1,280kB     -12,023kB           0kB reading files: gathering initial sources
+      1,260ms       2,040ms         112ms     +50,152kB     +48,640kB     +51,344kB        +413kB reading files: visiting dependencies
+          0ms           0ms           0ms          +8kB           0kB          +3kB           0kB analyzing
+         13ms          33ms           0ms         +28kB           0kB      +6,083kB           0kB analyzing: cycles
+         27ms          59ms           2ms      +3,012kB      +2,816kB      +1,842kB        -157kB analyzing: dependents
+          1ms           1ms           0ms          +8kB           0kB         +46kB           0kB analyzing: orphans
+        292ms         384ms           8ms      +2,176kB      +2,048kB        +668kB           0kB analyzing: reachables
+          0ms           0ms           0ms         +12kB           0kB          +3kB           0kB analyzing: module metrics
+          0ms           0ms           0ms           0kB           0kB          +3kB           0kB analyzing: add focus (if any)
+         80ms         157ms           3ms        +560kB        +768kB      -3,119kB           0kB analyzing: validations
+          5ms          13ms           0ms         +56kB        +256kB        +960kB           0kB analyzing: comparing against known errors
+          6ms           7ms           1ms      +1,704kB      +1,088kB      +2,314kB        +541kB cache: save
+          5ms           5ms           0ms         +40kB           0kB        +596kB           0kB reporting
+          0ms           0ms           0ms           0kB           0kB          +5kB           0kB really done
+------------- ------------- ------------- ------------- ------------- ------------- ------------- -------------
+      2,775ms       3,920ms         248ms    +213,156kB    +149,744kB    +122,798kB      +2,188kB
 ```
+
+Number formatting takes place with the `Intl` API, so in your locale the numbers
+and units might look slightly different.
 
 </details>
 
@@ -1091,6 +1157,14 @@ stay in view when dependency-cruiser is done.
 Make sure dependency-cruiser doesn't print any feedback. Useful if you want to
 override the progress option configured in a configuration file (currently
 an undocumented feature that is subject to change).
+
+### `--no-progress`: don't show feedback on what dependency-cruiser is doing
+
+The equivalent of `--progress none`.
+
+As showing no progress is dependency-cruiser's default the only use for this
+option is to override a `progress` setting from a configuration file or a
+`--progress` command line option set earlier on the command line.
 
 ### `--prefix` prefixing links
 
@@ -1169,8 +1243,8 @@ happens when
 
 - changes to files that would be part of a cruise have happened.
   This includes modifications of files already included in the earlier cruise,
-  new files, file deletions and file renaming. Dependency-cruiser uses `git`
-  to do this.
+  new files, file deletions and file renaming. By default dependency-cruiser
+  uses `git` to do this (see `--cache-strategy` below for other options).
 - The parameters/ options of the cruises are still "compatible".
   The rule of thumb is that if the _existing_ cache has a broader scope than
   the _new_ one, the cruises are compatible and the new cruise can use the
@@ -1181,6 +1255,31 @@ happens when
     the filters are exactly the same.
   - if the cache was created without a filter, but the new cruise includes one,
     the new cruise _can_ be served from the cache.
+
+### `--cache-strategy`: influence how the cache functionality detects changes (experimental)
+
+> :warning: this is part of the _experimental_ cache feature. Especially the
+> 'content' cache strategy is quite new. The feature _is_ tested and works, but
+> interface & format might change without dependency-cruiser getting a major
+> bump.
+
+> Available from version 12.5.0
+
+With this option you can tell dependency-cruiser how it should detect whether
+files have changed. The default (`metadata`) use git for this - it is the fastest
+and most reliable of the two. The other one (`content`) is there in case you
+don't have git available or are working on a shallow clone of your repository
+(which might be the only practical way on a continuous integration server). The
+`content` strategy looks at the content of the files.
+
+When you don't pass --cache-strategy (and don't specify a `strategy` in the
+`cache` option in you .dependency-cruiser.js) the strategy defaults to `metadata`.
+
+### `--no-cache`: switch off caching
+
+This overrides any `--cache`, `--cache-strategy` options set earlier on the
+command line as well as the [`cache`](./options-reference.md#cache)
+configuration option.
 
 ## depcruise-fmt
 

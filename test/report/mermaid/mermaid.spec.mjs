@@ -1,11 +1,11 @@
-import { readFileSync } from "fs";
-import { join } from "path";
-import { fileURLToPath } from "url";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect } from "chai";
 // eslint-plugins import and node don't yet understand these 'self references'
 // eslint-disable-next-line import/no-unresolved, node/no-missing-import
 import mermaidReporterPlugin from "dependency-cruiser/mermaid-reporter-plugin";
-import mermaid from "../../../src/report/mermaid.js";
+import mermaid from "../../../src/report/mermaid.mjs";
 import { createRequireJSON } from "../../backwards.utl.mjs";
 
 const requireJSON = createRequireJSON(import.meta.url);
@@ -51,6 +51,9 @@ describe("[I] report/mermaid", () => {
   });
   it("renders a mermaid - renders focused elements with highlights - minified", () => {
     same("with-focus", { minify: true });
+  });
+  it("renders collapsed nodes correctly", () => {
+    same("collapsed", { minify: true });
   });
 });
 

@@ -134,8 +134,15 @@ export default {
             "A measure for how stable the module is; ranging between 0 (completely " +
             "stable module) to 1 (completely instable module). Derived from Uncle " +
             "Bob's instability metric - but applied to a single module instead of " +
-            "to a group of them. This attribute is only present when dependency-cruiser" +
+            "to a group of them. This attribute is only present when dependency-cruiser " +
             "was asked to calculate metrics.",
+        },
+        checksum: {
+          type: "string",
+          description:
+            "checksum of the contents of the module. This attribute is currently " +
+            "only available when the cruise was executed with caching and the cache " +
+            "strategy is 'content'.",
         },
       },
     },
